@@ -1,6 +1,4 @@
-# CLAUDE.md
-
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+# AGENTS.md
 
 ## 프로젝트 개요
 
@@ -71,8 +69,7 @@ Tailwind CSS v4는 `@tailwindcss/vite` 플러그인으로 통합됩니다. 별�
 
 ## 테스트 파일 배치
 
-- 단위/컴포넌트 테스트: `src/` 아래 소스 옆에 `*.test.ts(x)` (예: `App.test.tsx`, `lib/validation.test.ts`)
-- E2E 테스트: `tests/e2e/` 디렉터리에 `*.spec.ts`
+[docs/rules/tests.md](docs/rules/tests.md)를 참고하세요.
 
 ## 환경변수
 
