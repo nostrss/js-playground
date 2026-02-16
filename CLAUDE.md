@@ -89,3 +89,4 @@ Lint 규칙은 `eslint.config.js`(`@eslint/js`, `typescript-eslint`, `react-hook
 아래 skill을 참고하세요.
 
 - `commit-work` skill을 사용하여 커밋하세요.
+- 반드시 한국어로 커밋 메시지를 작성하세요.
