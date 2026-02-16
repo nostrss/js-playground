@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
-import App from './App'
+import App from '../../src/App'
 
 vi.mock('@/components/Editor', () => ({
   Editor: () => <div data-testid='editor'>Mock Editor</div>,
