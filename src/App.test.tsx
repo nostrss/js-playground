@@ -1,36 +1,22 @@
 import { render, screen } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import App from './App'
 
+vi.mock('@/components/Editor', () => ({
+  Editor: () => <div data-testid='editor'>Mock Editor</div>,
+}))
+
 describe('App', () => {
-  it('핵심 섹션을 렌더링한다', () => {
+  it('에디터를 렌더링한다', () => {
     render(<App />)
 
-    expect(
-      screen.getByRole('heading', {
-        name: 'Vite + React + Zod',
-      }),
-    ).toBeInTheDocument()
-    expect(screen.getByText(/API 검증:\s*실패/)).toBeInTheDocument()
-    expect(screen.getByText(/폼 검증:\s*실패/)).toBeInTheDocument()
-    expect(screen.getByText(/ENV 검증:\s*실패/)).toBeInTheDocument()
+    expect(screen.getByTestId('editor')).toBeInTheDocument()
   })
 
-  it('카운트 증가 버튼 클릭 시 값이 증가한다', async () => {
-    const user = userEvent.setup()
-
+  it('전체 화면 레이아웃 클래스를 적용한다', () => {
     render(<App />)
 
-    expect(screen.getByText('0')).toBeInTheDocument()
-
-    await user.click(
-      screen.getByRole('button', {
-        name: '카운트 증가',
-      }),
-    )
-
-    expect(screen.getByText('1')).toBeInTheDocument()
+    expect(screen.getByRole('main')).toHaveClass('h-screen', 'w-screen')
   })
 })
