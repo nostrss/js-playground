@@ -1,92 +1,105 @@
-# 저장소 가이드라인
+# CLAUDE.md
 
-## 프로젝트 구조 및 모듈 구성
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-이 저장소는 Vite + React + TypeScript 플레이그라운드입니다.
+## 프로젝트 개요
 
-- `src/`: 애플리케이션 소스 코드.
-- `src/main.tsx`: 앱 부트스트랩 및 React 루트 마운트.
-- `src/App.tsx`: 메인 샘플 컴포넌트.
-- `src/assets/`: 소스 파일에서 import하는 정적 에셋.
-- `public/`: 변환 없이 그대로 제공되는 파일(예: `public/vite.svg`).
-- 루트 설정 파일: `vite.config.ts`, `eslint.config.js`, `tsconfig*.json`.
-
-새 기능 코드는 `src/`에 두고, 관련 스타일/에셋은 가능하면 해당 컴포넌트 근처에 함께 배치하세요.
+Vite + React 19 + TypeScript 플레이그라운드. Tailwind CSS v4로 스타일링하고, Zod로 런타임 검증을 수행합니다.
 
 ## 빌드, 테스트, 개발 명령어
 
-`pnpm`을 사용합니다(락파일: `pnpm-lock.yaml`).
+패키지 매니저: `pnpm`
 
-- `pnpm dev`: HMR이 활성화된 Vite 개발 서버를 시작합니다.
-- `pnpm build`: TypeScript 빌드(`tsc -b`)를 실행하고 프로덕션 번들을 생성합니다.
-- `pnpm preview`: 프로덕션 빌드를 로컬에서 서빙합니다.
-- `pnpm lint`: 프로젝트 전체에 ESLint를 실행합니다.
+### 개발 및 빌드
 
-PR을 열기 전에 `pnpm lint && pnpm build`를 실행하세요.
+- `pnpm dev` — Vite 개발 서버(HMR)
+- `pnpm build` — `tsc -b && vite build` (타입 체크 + 프로덕션 빌드)
+- `pnpm preview` — 프로덕션 빌드 로컬 서빙
+- `pnpm lint` — ESLint 실행
 
-## 사용가능한 skill
+PR 전 반드시: `pnpm lint && pnpm build`
 
-- `modern-javascript-patterns`
-- `vercel-react-best-practices`
-- `javascript-testing-patterns`
-- `typescript-advanced-types`
-- `clean-code`
-- `vitest`
-- `web-design-guidelines`
+### 단위/컴포넌트 테스트 (Vitest)
+
+- `pnpm test` — 전체 테스트 1회 실행
+- `pnpm test:watch` — 워치 모드
+- `pnpm test:ui` — Vitest UI
+- `pnpm coverage` — 커버리지 리포트 생성 (`./coverage/`)
+- 단일 파일 테스트: `pnpm test src/lib/validation.test.ts`
+
+Vitest globals가 활성화되어 있어 `describe`, `it`, `expect`를 import 없이 사용 가능합니다.
+테스트 환경은 jsdom이며, 설정 파일은 `src/test/setup.ts` (`@testing-library/jest-dom` 매처 등록).
+
+### E2E 테스트 (Playwright)
+
+- `pnpm e2e` — 헤드리스 실행
+- `pnpm e2e:headed` — 브라우저 표시
+- `pnpm e2e:ui` — Playwright UI
+- `pnpm e2e:report` — 리포트 열기
+
+브라우저: Chromium만 사용. 베이스 URL: `http://127.0.0.1:4173`.
+Playwright가 자동으로 `pnpm dev --host 127.0.0.1 --port 4173`으로 서버를 시작합니다.
+
+## 아키텍처
+
+```
+src/
+├── main.tsx          # React 루트 마운트
+├── App.tsx           # 메인 컴포넌트 (Zod 검증 데모 + 카운터)
+├── index.css         # Tailwind CSS 글로벌 임포트 (@import "tailwindcss")
+├── lib/              # 유틸리티 함수
+│   └── validation.ts # validateWithSchema<T>() — Zod safeParse 래퍼
+├── schemas/          # Zod 스키마 정의
+│   ├── common.ts     # 공통 스키마 (id, email, displayName)
+│   ├── auth.ts       # 로그인 폼 스키마
+│   ├── user.ts       # 사용자 + API 응답 스키마
+│   └── env.ts        # 환경변수 스키마 (VITE_API_BASE_URL, VITE_APP_NAME)
+└── test/
+    └── setup.ts      # Vitest 셋업 (jest-dom 매처, cleanup)
+
+tests/
+└── e2e/              # Playwright E2E 테스트
+```
+
+### 검증 패턴
+
+`lib/validation.ts`의 `validateWithSchema(schema, input)`은 `ValidationResult<T>` (Success | Failure)를 반환합니다. 새 스키마는 `schemas/`에 도메인별 파일로 추가하고, `common.ts`의 기본 스키마를 재사용하세요.
+
+### 스타일링
+
+Tailwind CSS v4는 `@tailwindcss/vite` 플러그인으로 통합됩니다. 별도 `tailwind.config.js` 없이 Vite 플러그인이 처리합니다.
+
+## 테스트 파일 배치
+
+- 단위/컴포넌트 테스트: `src/` 아래 소스 옆에 `*.test.ts(x)` (예: `App.test.tsx`, `lib/validation.test.ts`)
+- E2E 테스트: `tests/e2e/` 디렉터리에 `*.spec.ts`
+
+## 환경변수
+
+- `VITE_API_BASE_URL` — 필수, 유효한 URL
+- `VITE_APP_NAME` — 선택, 기본값 `"JS Playground"`
+
+`schemas/env.ts`에서 Zod로 검증됩니다.
+
+## 코딩 스타일
+
+- ES 모듈 TypeScript (`.ts`, `.tsx`), 스페이스 2칸
+- 컴포넌트/파일: PascalCase, 변수/함수: camelCase
+- 함수형 컴포넌트 + 훅 우선
+- import 그룹화: 외부 의존성 → 로컬 모듈
+- TypeScript strict 모드 (`noUnusedLocals`, `noUnusedParameters` 등)
+- Lint 규칙: `eslint.config.js` (ESLint 9 flat config)
+
+세부 규칙은 `clean-code` skill을 참고하세요.
+
+## 사용 가능한 skill
+
+- `modern-javascript-patterns`, `typescript-advanced-types`, `clean-code`
+- `vercel-react-best-practices`, `web-design-guidelines`
+- `vitest`, `javascript-testing-patterns`
 - `commit-work`
 
-## 코딩 스타일 및 네이밍 규칙
-
-- 언어: ES 모듈 기반 TypeScript(`.ts`, `.tsx`).
-- 들여쓰기: 스페이스 2칸, 기존 파일의 포맷을 일관되게 유지.
-- 컴포넌트: PascalCase 파일/컴포넌트 이름 사용(예: `UserCard.tsx`).
-- 변수/함수: camelCase 사용.
-- 함수형 React 컴포넌트와 훅 사용을 우선.
-- import는 명시적으로 작성하고 그룹화 유지(외부 의존성 먼저, 로컬 모듈 나중).
-- 그 외의 규칙은 `clean-code` skill을 참고하세요.
-
-Lint 규칙은 `eslint.config.js`(`@eslint/js`, `typescript-eslint`, `react-hooks`, `react-refresh`)에서 정의됩니다. 병합 전에 lint 경고를 해결하세요.
-
-## 자바 스크립트, 타입스크립트 가이드 라인
-
-아래 skill을 참고하세요.
-
-- `modern-javascript-patterns`
-- `typescript-advanced-types`
-- `clean-code`
-
-## 리액트 가이드 라인
-
-아래 skill을 참고하세요.
-
-- `vercel-react-best-practices`
-- `web-design-guidelines`
-
-## 테스트 가이드라인
-
-아래 skill을 참고하세요.
-
-- `vitest`
-- `javascript-testing-patterns`
-
-현재 `package.json`에는 자동화된 테스트 프레임워크가 설정되어 있지 않습니다.
-
-현재 기준:
-
-- `pnpm dev`, `pnpm lint`, `pnpm build`로 변경 사항을 검증하세요.
-- 동작 변화가 큰 기능을 추가할 경우 PR 설명에 짧은 수동 테스트 계획을 포함하세요.
-
-향후 테스트를 추가한다면 `src/` 아래에 `ComponentName.test.tsx` 같은 명확한 이름으로 배치하세요.
-
-## 사용 가능한 MCP
-
-아래 MCP를 참고하세요.
-
-- `chrome-devtools`
-
-## 커밋 및 Pull Request 가이드라인
-
-아래 skill을 참고하세요.
+## 커밋 가이드라인
 
 - `commit-work` skill을 사용하여 커밋하세요.
-- 반드시 한국어로 커밋 메시지를 작성하세요.
+- 반드시 **한국어**로 커밋 메시지를 작성하세요.
