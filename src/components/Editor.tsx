@@ -1,9 +1,68 @@
-import { useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import * as monaco from 'monaco-editor'
 import 'monaco-editor/min/vs/editor/editor.main.css'
 
+import { createRunner } from '@/lib/runner'
+import { playgroundRuntimeConfigSchema } from '@/schemas/playground'
+import type { ConsoleEntry, RunnerMessage } from '@/types/console'
+
+import { ConsolePanel } from './ConsolePanel'
+
+const runtimeConfig = playgroundRuntimeConfigSchema.parse({
+  debounceMs: 1000,
+  clearOnRun: true,
+  initialCode: ['function demo() {', '  console.log("Hello world!")', '}', '', 'demo()'].join('\n'),
+})
+
+function createConsoleEntry(message: RunnerMessage, index: number): ConsoleEntry {
+  if (message.type === 'runtime-error') {
+    return {
+      id: `${message.runId}-runtime-error-${index}`,
+      runId: message.runId,
+      kind: 'runtime-error',
+      level: 'error',
+      text: message.message,
+      stack: message.stack,
+      timestamp: message.timestamp,
+    }
+  }
+
+  return {
+    id: `${message.runId}-${message.level}-${index}`,
+    runId: message.runId,
+    kind: 'console',
+    level: message.level,
+    text: message.args.join(' '),
+    stack: null,
+    timestamp: message.timestamp,
+  }
+}
+
 export const Editor = () => {
   const containerRef = useRef<HTMLDivElement | null>(null)
+  const activeRunIdRef = useRef(0)
+  const runnerRef = useRef<ReturnType<typeof createRunner> | null>(null)
+
+  const [code, setCode] = useState(runtimeConfig.initialCode)
+  const [logs, setLogs] = useState<ConsoleEntry[]>([])
+  const [isRunning, setIsRunning] = useState(false)
+
+  const handleRunnerMessage = useCallback((message: RunnerMessage) => {
+    if (message.runId !== activeRunIdRef.current) {
+      return
+    }
+
+    setLogs((current) => [...current, createConsoleEntry(message, current.length)])
+  }, [])
+
+  useEffect(() => {
+    runnerRef.current = createRunner({ onMessage: handleRunnerMessage })
+
+    return () => {
+      runnerRef.current?.dispose()
+      runnerRef.current = null
+    }
+  }, [handleRunnerMessage])
 
   useEffect(() => {
     if (!containerRef.current) {
@@ -11,15 +70,59 @@ export const Editor = () => {
     }
 
     const editorInstance = monaco.editor.create(containerRef.current, {
-      value: ['function x() {', '\tconsole.log("Hello world!");', '}'].join('\n'),
+      value: runtimeConfig.initialCode,
       language: 'javascript',
       automaticLayout: true,
+      minimap: { enabled: false },
+    })
+
+    const contentListener = editorInstance.onDidChangeModelContent(() => {
+      setCode(editorInstance.getValue())
     })
 
     return () => {
+      contentListener.dispose()
       editorInstance.dispose()
     }
   }, [])
 
-  return <div ref={containerRef} className='h-full w-full' />
+  useEffect(() => {
+    const runner = runnerRef.current
+    if (!runner) {
+      return
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      const nextRunId = activeRunIdRef.current + 1
+      activeRunIdRef.current = nextRunId
+
+      setIsRunning(true)
+      if (runtimeConfig.clearOnRun) {
+        setLogs([])
+      }
+
+      const execution = runner.execute(code, nextRunId)
+
+      void execution?.finally(() => {
+        if (activeRunIdRef.current === nextRunId) {
+          setIsRunning(false)
+        }
+      })
+    }, runtimeConfig.debounceMs)
+
+    return () => {
+      window.clearTimeout(timeoutId)
+    }
+  }, [code])
+
+  return (
+    <div className='h-full w-full overflow-auto'>
+      <div className='grid h-full min-w-[960px] grid-cols-2' data-testid='playground-layout'>
+        <section className='h-full min-w-0' data-testid='editor-panel'>
+          <div ref={containerRef} className='h-full w-full' />
+        </section>
+        <ConsolePanel logs={logs} isRunning={isRunning} />
+      </div>
+    </div>
+  )
 }

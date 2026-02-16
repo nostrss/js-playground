@@ -1,6 +1,11 @@
 # JS Playground
 
-Vite + React + TypeScript 기반 플레이그라운드입니다.
+Vite + React + TypeScript 기반 JavaScript Playground입니다.
+
+- 좌측: Monaco Editor에서 JavaScript 코드 작성
+- 우측: 실행 결과 Console 출력
+- 코드 변경 후 1000ms 디바운스로 자동 실행
+- `console.*` 출력과 runtime error를 함께 표시
 
 ## 실행
 
