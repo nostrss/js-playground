@@ -103,3 +103,4 @@ Tailwind CSS v4는 `@tailwindcss/vite` 플러그인으로 통합됩니다. 별�
 
 - `commit-work` skill을 사용하여 커밋하세요.
 - 반드시 **한국어**로 커밋 메시지를 작성하세요.
+- 반드시 결과를 알려줄 때 사용한 **skill**을 알려주세요.
