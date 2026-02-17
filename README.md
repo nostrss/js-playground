@@ -45,6 +45,20 @@ pnpm dev
 - 콘솔 패널 너비 드래그 조절
 - 에디터 테마 선택 및 로컬 스토리지 저장
 
+## SEO 기본 설정
+
+CSR 앱 기준으로 최소 SEO 구성을 적용했습니다.
+
+- `index.html`: `description`, `canonical`, Open Graph, Twitter 메타 태그
+- `public/robots.txt`: 전체 크롤링 허용 + 사이트맵 위치
+- `public/sitemap.xml`: 루트 URL(`/playground`) 등록
+
+현재 기준 URL은 `https://www.nostrss.me/playground`입니다. 운영 URL이 바뀌면 아래 파일을 함께 수정하세요.
+
+- `index.html`
+- `public/robots.txt`
+- `public/sitemap.xml`
+
 ## 기술 스택
 
 - Vite 7
