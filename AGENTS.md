@@ -2,7 +2,7 @@
 
 ## 프로젝트 개요
 
-Vite + React 19 + TypeScript 플레이그라운드. Tailwind CSS v4로 스타일링하고, Zod로 런타임 검증을 수행합니다.
+브라우저 기반 JavaScript Playground. 좌측 Monaco Editor에서 코드를 작성하면 1초 디바운스 후 샌드박스(iframe)에서 자동 실행되어 우측 ConsolePanel에 결과를 출력합니다. Vite + React 19 + TypeScript로 구축되며, Tailwind CSS v4로 스타일링하고, Zod로 런타임 검증을 수행합니다.
 
 ## 빌드, 테스트, 개발 명령어
 
@@ -40,28 +40,25 @@ Playwright가 자동으로 `pnpm dev --host 127.0.0.1 --port 4173`으로 서버�
 
 ## 아키텍처
 
-```
-src/
-├── main.tsx          # React 루트 마운트
-├── App.tsx           # 메인 컴포넌트 (Zod 검증 데모 + 카운터)
-├── index.css         # Tailwind CSS 글로벌 임포트 (@import "tailwindcss")
-├── lib/              # 유틸리티 함수
-│   └── validation.ts # validateWithSchema<T>() — Zod safeParse 래퍼
-├── schemas/          # Zod 스키마 정의
-│   ├── common.ts     # 공통 스키마 (id, email, displayName)
-│   ├── auth.ts       # 로그인 폼 스키마
-│   ├── user.ts       # 사용자 + API 응답 스키마
-│   └── env.ts        # 환경변수 스키마 (VITE_API_BASE_URL, VITE_APP_NAME)
-└── test/
-    └── setup.ts      # Vitest 셋업 (jest-dom 매처, cleanup)
+### 핵심 흐름
 
-tests/
-└── e2e/              # Playwright E2E 테스트
-```
+`App` → `Editor` → `ConsolePanel` 구조의 단일 페이지 앱입니다.
 
-### 검증 패턴
+1. **Editor** (`components/Editor.tsx`): Monaco Editor 인스턴스를 관리. 코드 변경 시 `useState`로 `code` 상태를 업데이트하고, `useEffect` 내 `setTimeout`으로 1초 디바운스 후 Runner에 실행을 위임합니다.
+2. **Runner** (`lib/runner.ts`): `sandbox="allow-scripts"` iframe을 동적으로 생성하고 `srcdoc`에 콘솔 인터셉트 스크립트를 주입합니다. `postMessage`로 코드를 전달하고, iframe 내에서 `new Function('console', code)`로 실행합니다. `console.*` 호출과 runtime error를 `postMessage`로 부모에게 전달합니다.
+3. **ConsolePanel** (`components/ConsolePanel.tsx`): Runner로부터 받은 메시지를 `ConsoleEntry[]` 형태로 렌더링. 드래그로 패널 너비 조절 가능.
 
-`lib/validation.ts`의 `validateWithSchema(schema, input)`은 `ValidationResult<T>` (Success | Failure)를 반환합니다. 새 스키마는 `schemas/`에 도메인별 파일로 추가하고, `common.ts`의 기본 스키마를 재사용하세요.
+### 타입-스키마 이중 구조
+
+도메인 타입은 `types/`에 TypeScript 타입으로, 런타임 검증은 `schemas/`에 Zod 스키마로 정의합니다. `lib/validation.ts`의 `validateWithSchema(schema, input)`이 `ValidationResult<T>` (Success | Failure)를 반환하는 래퍼입니다. 새 스키마는 `schemas/`에 도메인별 파일로 추가하고, `common.ts`의 기본 스키마를 재사용하세요.
+
+### 테마 시스템
+
+`lib/monacoThemes.ts`에서 Monaco Editor 테마와 ConsolePanel 테마 스타일을 함께 관리합니다. `MonacoThemeId` 리터럴 유니온(`'vs' | 'dracula' | 'vs-dark'`)으로 타입 안전하게 관리하며, `localStorage`에 선택 테마를 영속화합니다.
+
+### Path alias
+
+`@/` → `src/` (vite.config.ts의 resolve.alias와 tsconfig.json의 paths에서 설정)
 
 ### 스타일링
 
@@ -69,7 +66,13 @@ Tailwind CSS v4는 `@tailwindcss/vite` 플러그인으로 통합됩니다. 별�
 
 ## 테스트 파일 배치
 
-[docs/rules/tests.md](docs/rules/tests.md)를 참고하세요.
+[docs/rules/tests.md](docs/rules/tests.md)를 참고하세요. 요약:
+
+- `unit` 테스트: `tests/unit/*.test.ts`
+- `component` 테스트: `tests/component/*.test.tsx`
+- `e2e` 테스트: `tests/e2e/*.spec.ts`
+
+타입이 다른 테스트를 같은 디렉터리에 섞지 않습니다.
 
 ## 환경변수
 
