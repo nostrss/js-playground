@@ -4,6 +4,8 @@
 
 브라우저 기반 JavaScript Playground. 좌측 Monaco Editor에서 코드를 작성하면 1초 디바운스 후 샌드박스(iframe)에서 자동 실행되어 우측 ConsolePanel에 결과를 출력합니다. Vite + React 19 + TypeScript로 구축되며, Tailwind CSS v4로 스타일링하고, Zod로 런타임 검증을 수행합니다.
 
+운영 URL: `https://www.nostrss.me/playground`
+
 ## 빌드, 테스트, 개발 명령어
 
 패키지 매니저: `pnpm`
@@ -40,6 +42,13 @@ Playwright가 자동으로 `pnpm dev --host 127.0.0.1 --port 4173`으로 서버�
 
 ## 아키텍처
 
+### 초기화 순서
+
+`main.tsx`에서 React 마운트 전에 두 가지 초기화를 수행합니다:
+
+1. `initMonacoEnvironment()` — Monaco Editor Web Worker 등록 (`lib/monacoEnvironment.ts`). `window.__MONACO_ENV_INITIALIZED__` 플래그로 중복 실행 방지.
+2. `initAnalytics()` + `trackPageView()` — GA4 gtag 스크립트 동적 삽입 (`lib/analytics.ts`). `import.meta.env.DEV`일 때 자동 비활성화.
+
 ### 핵심 흐름
 
 `App` → `Editor` → `ConsolePanel` 구조의 단일 페이지 앱입니다.
@@ -64,6 +73,10 @@ Playwright가 자동으로 `pnpm dev --host 127.0.0.1 --port 4173`으로 서버�
 
 Tailwind CSS v4는 `@tailwindcss/vite` 플러그인으로 통합됩니다. 별도 `tailwind.config.js` 없이 Vite 플러그인이 처리합니다.
 
+### SEO
+
+CSR 앱 기준 최소 SEO 설정: `index.html` (메타 태그), `public/robots.txt`, `public/sitemap.xml`. 운영 URL 변경 시 세 파일을 함께 수정해야 합니다.
+
 ## 테스트 파일 배치
 
 [docs/rules/tests.md](docs/rules/tests.md)를 참고하세요. 요약:
@@ -78,6 +91,7 @@ Tailwind CSS v4는 `@tailwindcss/vite` 플러그인으로 통합됩니다. 별�
 
 - `VITE_API_BASE_URL` — 필수, 유효한 URL
 - `VITE_APP_NAME` — 선택, 기본값 `"JS Playground"`
+- `VITE_GA_MEASUREMENT_ID` — 선택, GA4 측정 ID. 미설정 또는 DEV 환경에서 자동 비활성화
 
 `schemas/env.ts`에서 Zod로 검증됩니다.
 
