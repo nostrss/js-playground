@@ -1,4 +1,4 @@
-import { act, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { RunnerMessage } from '@/types/console'
@@ -64,6 +64,38 @@ describe('Editor', () => {
     expect(screen.getByTestId('playground-layout')).toBeInTheDocument()
     expect(screen.getByTestId('editor-panel')).toBeInTheDocument()
     expect(screen.getByTestId('console-panel')).toBeInTheDocument()
+    expect(screen.getByTestId('console-resize-handle')).toBeInTheDocument()
+  })
+
+  it('콘솔 패널 너비를 드래그로 조절하고 최소/최대 범위를 지킨다', () => {
+    render(<Editor />)
+
+    const panel = screen.getByTestId('console-panel')
+    const handle = screen.getByTestId('console-resize-handle')
+
+    expect(panel).toHaveStyle({ width: '360px' })
+
+    act(() => {
+      fireEvent.mouseDown(handle, { clientX: 1000 })
+      fireEvent.mouseMove(window, { clientX: 900 })
+    })
+    expect(panel).toHaveStyle({ width: '460px' })
+
+    act(() => {
+      fireEvent.mouseMove(window, { clientX: 2000 })
+    })
+    expect(panel).toHaveStyle({ width: '280px' })
+
+    act(() => {
+      fireEvent.mouseMove(window, { clientX: 0 })
+    })
+    expect(panel).toHaveStyle({ width: '720px' })
+
+    act(() => {
+      fireEvent.mouseUp(window)
+      fireEvent.mouseMove(window, { clientX: 600 })
+    })
+    expect(panel).toHaveStyle({ width: '720px' })
   })
 
   it('초기 실행 이후 runId=1 로그를 콘솔에 표시한다', async () => {
