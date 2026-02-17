@@ -1,7 +1,7 @@
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { THEME_STORAGE_KEY } from '@/lib/monacoThemes'
+import { THEME_STORAGE_KEY, getConsolePanelThemeStyle } from '@/lib/monacoThemes'
 import type { RunnerMessage } from '@/types/console'
 
 const mockState = vi.hoisted(() => ({
@@ -52,6 +52,12 @@ function emitRunnerMessage(message: RunnerMessage) {
   mockState.runnerMessageListener?.(message)
 }
 
+function toCssColor(color: string) {
+  const element = document.createElement('div')
+  element.style.color = color
+  return element.style.color
+}
+
 describe('Editor', () => {
   beforeEach(() => {
     vi.useFakeTimers()
@@ -93,6 +99,10 @@ describe('Editor', () => {
 
     expect(screen.getByTestId('editor-theme-select')).toHaveValue('dracula')
     expect(mockState.setThemeMock).toHaveBeenCalledWith('dracula')
+
+    const panel = screen.getByTestId('console-panel')
+    const draculaStyle = getConsolePanelThemeStyle('dracula')
+    expect(panel.style.backgroundColor).toBe(toCssColor(draculaStyle.panelBg))
   })
 
   it('유효하지 않은 저장 테마는 vs로 폴백한다', () => {
@@ -108,10 +118,16 @@ describe('Editor', () => {
     render(<Editor />)
 
     const select = screen.getByTestId('editor-theme-select')
+    const panel = screen.getByTestId('console-panel')
+    const initialBackground = panel.style.backgroundColor
     fireEvent.change(select, { target: { value: 'vs-dark' } })
 
     expect(mockState.setThemeMock).toHaveBeenLastCalledWith('vs-dark')
     expect(window.localStorage.getItem(THEME_STORAGE_KEY)).toBe('vs-dark')
+    expect(panel.style.backgroundColor).not.toBe(initialBackground)
+
+    const darkStyle = getConsolePanelThemeStyle('vs-dark')
+    expect(panel.style.backgroundColor).toBe(toCssColor(darkStyle.panelBg))
   })
 
   it('콘솔 패널 너비를 드래그로 조절하고 최소/최대 범위를 지킨다', () => {

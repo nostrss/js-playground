@@ -14,6 +14,23 @@ export const MONACO_THEME_OPTIONS: Array<{ id: MonacoThemeId; label: string }> =
   { id: 'vs-dark', label: 'VS Dark' },
 ]
 
+export type ConsolePanelThemeStyle = {
+  panelBg: string
+  panelBorder: string
+  headerBorder: string
+  titleText: string
+  metaText: string
+  bodyText: string
+  emptyText: string
+  selectBg: string
+  selectBorder: string
+  selectText: string
+  levelInfoText: string
+  levelWarnText: string
+  levelErrorText: string
+  levelDebugText: string
+}
+
 const draculaThemeData: monaco.editor.IStandaloneThemeData = {
   base: 'vs-dark',
   inherit: true,
@@ -52,4 +69,59 @@ export function resolveStoredTheme(rawValue: string | null): MonacoThemeId {
 
 export function registerMonacoThemes(monacoInstance: typeof monaco) {
   monacoInstance.editor.defineTheme('dracula', draculaThemeData)
+}
+
+const consolePanelThemeStyles: Record<MonacoThemeId, ConsolePanelThemeStyle> = {
+  vs: {
+    panelBg: '#F8FAFC',
+    panelBorder: '#E2E8F0',
+    headerBorder: '#E2E8F0',
+    titleText: '#334155',
+    metaText: '#64748B',
+    bodyText: '#334155',
+    emptyText: '#64748B',
+    selectBg: '#FFFFFF',
+    selectBorder: '#CBD5E1',
+    selectText: '#334155',
+    levelInfoText: '#1D4ED8',
+    levelWarnText: '#B45309',
+    levelErrorText: '#BE123C',
+    levelDebugText: '#6D28D9',
+  },
+  dracula: {
+    panelBg: '#2D3140',
+    panelBorder: '#3A4153',
+    headerBorder: '#3A4153',
+    titleText: '#E2E8F0',
+    metaText: '#B7C0D6',
+    bodyText: '#E2E8F0',
+    emptyText: '#B7C0D6',
+    selectBg: '#353A4C',
+    selectBorder: '#4A5368',
+    selectText: '#E2E8F0',
+    levelInfoText: '#8BE9FD',
+    levelWarnText: '#F1FA8C',
+    levelErrorText: '#FF9580',
+    levelDebugText: '#C4B5FD',
+  },
+  'vs-dark': {
+    panelBg: '#1F232B',
+    panelBorder: '#2B313B',
+    headerBorder: '#2B313B',
+    titleText: '#D2D8E1',
+    metaText: '#A2ACB9',
+    bodyText: '#D2D8E1',
+    emptyText: '#A2ACB9',
+    selectBg: '#262C35',
+    selectBorder: '#3B4553',
+    selectText: '#D2D8E1',
+    levelInfoText: '#93C5FD',
+    levelWarnText: '#FCD34D',
+    levelErrorText: '#FDA4AF',
+    levelDebugText: '#C4B5FD',
+  },
+}
+
+export function getConsolePanelThemeStyle(themeId: MonacoThemeId): ConsolePanelThemeStyle {
+  return consolePanelThemeStyles[themeId]
 }
