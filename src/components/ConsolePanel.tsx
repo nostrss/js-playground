@@ -28,7 +28,7 @@ export const ConsolePanel = ({ logs, isRunning, width, onResizeStart }: ConsoleP
         data-testid='console-resize-handle'
         onMouseDown={onResizeStart}
         role='separator'
-        aria-label='콘솔 너비 조절 핸들'
+        aria-label='Console resize handle'
         aria-orientation='vertical'
         aria-valuenow={width}
       />
@@ -41,7 +41,7 @@ export const ConsolePanel = ({ logs, isRunning, width, onResizeStart }: ConsoleP
 
       <div className='min-h-0 flex-1 overflow-auto p-3 font-mono text-sm'>
         {logs.length === 0 ? (
-          <p className='text-slate-500'>콘솔 출력이 없습니다.</p>
+          <p className='text-slate-500'>No console output.</p>
         ) : (
           <ul className='space-y-2'>
             {logs.map((log) => (
