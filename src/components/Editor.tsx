@@ -12,6 +12,7 @@ import {
   resolveStoredTheme,
 } from '@/lib/monacoThemes'
 import { createRunner } from '@/lib/runner'
+import { trackEvent } from '@/lib/analytics'
 import { playgroundRuntimeConfigSchema } from '@/schemas/playground'
 import type { ConsoleEntry, RunnerMessage } from '@/types/console'
 
@@ -91,6 +92,14 @@ export const Editor = () => {
       return
     }
 
+    if (message.type === 'runtime-error') {
+      trackEvent('runtime_error', {
+        source: 'runner',
+        run_id: message.runId,
+        error_type: 'runtime-error',
+      })
+    }
+
     setLogs((current) => [...current, createConsoleEntry(message, current.length)])
   }, [])
 
@@ -138,6 +147,14 @@ export const Editor = () => {
     window.localStorage.setItem(THEME_STORAGE_KEY, selectedTheme)
   }, [selectedTheme])
 
+  const handleThemeChange = useCallback((nextTheme: MonacoThemeId) => {
+    setSelectedTheme(nextTheme)
+    trackEvent('theme_change', {
+      source: 'console-panel',
+      theme: nextTheme,
+    })
+  }, [])
+
   useEffect(() => {
     const runner = runnerRef.current
     if (!runner) {
@@ -152,6 +169,11 @@ export const Editor = () => {
       if (runtimeConfig.clearOnRun) {
         setLogs([])
       }
+
+      trackEvent('code_run', {
+        source: 'editor',
+        run_id: nextRunId,
+      })
 
       const execution = runner.execute(code, nextRunId)
 
@@ -206,7 +228,7 @@ export const Editor = () => {
           width={consoleWidth}
           selectedTheme={selectedTheme}
           themeOptions={MONACO_THEME_OPTIONS}
-          onThemeChange={setSelectedTheme}
+          onThemeChange={handleThemeChange}
           onResizeStart={handleConsoleResizeStart}
         />
       </div>
