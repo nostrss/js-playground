@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { MouseEvent as ReactMouseEvent } from 'react'
 import * as monaco from 'monaco-editor'
-import 'monaco-editor/min/vs/editor/editor.main.css'
+import 'monaco-editor/esm/vs/editor/editor.main.js'
 
 import {
   DEFAULT_THEME_ID,
