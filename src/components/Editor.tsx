@@ -3,6 +3,14 @@ import type { MouseEvent as ReactMouseEvent } from 'react'
 import * as monaco from 'monaco-editor'
 import 'monaco-editor/min/vs/editor/editor.main.css'
 
+import {
+  DEFAULT_THEME_ID,
+  MONACO_THEME_OPTIONS,
+  THEME_STORAGE_KEY,
+  type MonacoThemeId,
+  registerMonacoThemes,
+  resolveStoredTheme,
+} from '@/lib/monacoThemes'
 import { createRunner } from '@/lib/runner'
 import { playgroundRuntimeConfigSchema } from '@/schemas/playground'
 import type { ConsoleEntry, RunnerMessage } from '@/types/console'
@@ -58,6 +66,13 @@ export const Editor = () => {
   const [logs, setLogs] = useState<ConsoleEntry[]>([])
   const [isRunning, setIsRunning] = useState(false)
   const [consoleWidth, setConsoleWidth] = useState(DEFAULT_CONSOLE_WIDTH)
+  const [selectedTheme, setSelectedTheme] = useState<MonacoThemeId>(() => {
+    if (typeof window === 'undefined') {
+      return DEFAULT_THEME_ID
+    }
+
+    return resolveStoredTheme(window.localStorage.getItem(THEME_STORAGE_KEY))
+  })
 
   const stopConsoleResize = useCallback(() => {
     if (dragMoveHandlerRef.current) {
@@ -99,6 +114,8 @@ export const Editor = () => {
       return
     }
 
+    registerMonacoThemes(monaco)
+
     const editorInstance = monaco.editor.create(containerRef.current, {
       value: runtimeConfig.initialCode,
       language: 'javascript',
@@ -115,6 +132,11 @@ export const Editor = () => {
       editorInstance.dispose()
     }
   }, [])
+
+  useEffect(() => {
+    monaco.editor.setTheme(selectedTheme)
+    window.localStorage.setItem(THEME_STORAGE_KEY, selectedTheme)
+  }, [selectedTheme])
 
   useEffect(() => {
     const runner = runnerRef.current
@@ -182,6 +204,9 @@ export const Editor = () => {
           logs={logs}
           isRunning={isRunning}
           width={consoleWidth}
+          selectedTheme={selectedTheme}
+          themeOptions={MONACO_THEME_OPTIONS}
+          onThemeChange={setSelectedTheme}
           onResizeStart={handleConsoleResizeStart}
         />
       </div>

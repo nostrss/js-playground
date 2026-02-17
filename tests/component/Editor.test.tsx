@@ -1,17 +1,21 @@
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { THEME_STORAGE_KEY } from '@/lib/monacoThemes'
 import type { RunnerMessage } from '@/types/console'
 
 const mockState = vi.hoisted(() => ({
   executeMock: vi.fn(() => Promise.resolve()),
   disposeMock: vi.fn(),
+  createMock: vi.fn(),
+  defineThemeMock: vi.fn(),
+  setThemeMock: vi.fn(),
   runnerMessageListener: null as ((message: RunnerMessage) => void) | null,
 }))
 
 vi.mock('monaco-editor', () => ({
   editor: {
-    create: vi.fn((_container: Element, options: { value: string }) => {
+    create: mockState.createMock.mockImplementation((_container: Element, options: { value: string }) => {
       const currentValue = options.value
 
       return {
@@ -26,6 +30,8 @@ vi.mock('monaco-editor', () => ({
         dispose: vi.fn(),
       }
     }),
+    defineTheme: mockState.defineThemeMock,
+    setTheme: mockState.setThemeMock,
   },
 }))
 
@@ -49,8 +55,12 @@ function emitRunnerMessage(message: RunnerMessage) {
 describe('Editor', () => {
   beforeEach(() => {
     vi.useFakeTimers()
+    window.localStorage.clear()
     mockState.executeMock.mockClear()
     mockState.disposeMock.mockClear()
+    mockState.createMock.mockClear()
+    mockState.defineThemeMock.mockClear()
+    mockState.setThemeMock.mockClear()
     mockState.runnerMessageListener = null
   })
 
@@ -65,6 +75,43 @@ describe('Editor', () => {
     expect(screen.getByTestId('editor-panel')).toBeInTheDocument()
     expect(screen.getByTestId('console-panel')).toBeInTheDocument()
     expect(screen.getByTestId('console-resize-handle')).toBeInTheDocument()
+    expect(screen.getByTestId('editor-theme-select')).toBeInTheDocument()
+  })
+
+  it('기본 테마를 vs로 적용한다', () => {
+    render(<Editor />)
+
+    const select = screen.getByTestId('editor-theme-select')
+    expect(select).toHaveValue('vs')
+    expect(mockState.setThemeMock).toHaveBeenCalledWith('vs')
+  })
+
+  it('localStorage에 저장된 테마를 복원한다', () => {
+    window.localStorage.setItem(THEME_STORAGE_KEY, 'dracula')
+
+    render(<Editor />)
+
+    expect(screen.getByTestId('editor-theme-select')).toHaveValue('dracula')
+    expect(mockState.setThemeMock).toHaveBeenCalledWith('dracula')
+  })
+
+  it('유효하지 않은 저장 테마는 vs로 폴백한다', () => {
+    window.localStorage.setItem(THEME_STORAGE_KEY, 'invalid-theme')
+
+    render(<Editor />)
+
+    expect(screen.getByTestId('editor-theme-select')).toHaveValue('vs')
+    expect(mockState.setThemeMock).toHaveBeenCalledWith('vs')
+  })
+
+  it('테마를 변경하면 Monaco와 localStorage에 반영한다', () => {
+    render(<Editor />)
+
+    const select = screen.getByTestId('editor-theme-select')
+    fireEvent.change(select, { target: { value: 'vs-dark' } })
+
+    expect(mockState.setThemeMock).toHaveBeenLastCalledWith('vs-dark')
+    expect(window.localStorage.getItem(THEME_STORAGE_KEY)).toBe('vs-dark')
   })
 
   it('콘솔 패널 너비를 드래그로 조절하고 최소/최대 범위를 지킨다', () => {
