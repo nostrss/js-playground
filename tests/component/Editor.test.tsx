@@ -1,7 +1,8 @@
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { THEME_STORAGE_KEY, getConsolePanelThemeStyle } from '@/lib/monacoThemes'
+import { THEME_STORAGE_KEY } from '@/constants/theme'
+import { getThemeStyle } from '@/utils/theme'
 import type { RunnerMessage } from '@/types/console'
 
 const mockState = vi.hoisted(() => ({
@@ -101,7 +102,7 @@ describe('Editor', () => {
     expect(mockState.setThemeMock).toHaveBeenCalledWith('dracula')
 
     const panel = screen.getByTestId('console-panel')
-    const draculaStyle = getConsolePanelThemeStyle('dracula')
+    const draculaStyle = getThemeStyle('dracula')
     expect(panel.style.backgroundColor).toBe(toCssColor(draculaStyle.panelBg))
   })
 
@@ -126,7 +127,7 @@ describe('Editor', () => {
     expect(window.localStorage.getItem(THEME_STORAGE_KEY)).toBe('vs-dark')
     expect(panel.style.backgroundColor).not.toBe(initialBackground)
 
-    const darkStyle = getConsolePanelThemeStyle('vs-dark')
+    const darkStyle = getThemeStyle('vs-dark')
     expect(panel.style.backgroundColor).toBe(toCssColor(darkStyle.panelBg))
   })
 

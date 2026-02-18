@@ -41,17 +41,22 @@ test.describe('App playground', () => {
     await page.goto('/')
 
     const consolePanel = page.getByTestId('console-panel')
-    const inputArea = page.locator('.monaco-editor textarea.inputarea').first()
+    const editor = page.locator('.monaco-editor').first()
 
-    await inputArea.click()
-    await page.keyboard.press('ControlOrMeta+A')
+    // Focus editor by clicking the lines area
+    await editor.locator('.view-lines').click()
+    // Wait for Monaco to fully process the click
+    await page.waitForTimeout(100)
+    // Select all: Monaco internal keybinding
+    await page.keyboard.press('Meta+A')
     await page.keyboard.type("console.log('e2e message')")
 
     await expect(consolePanel).toContainText('e2e message')
     await expect(consolePanel).not.toContainText('Hello world!')
 
-    await inputArea.click()
-    await page.keyboard.press('ControlOrMeta+A')
+    await editor.locator('.view-lines').click()
+    await page.waitForTimeout(100)
+    await page.keyboard.press('Meta+A')
     await page.keyboard.type("throw new Error('boom from e2e')")
 
     await expect(consolePanel).toContainText('boom from e2e')

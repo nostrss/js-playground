@@ -1,21 +1,8 @@
 import { z } from 'zod'
 
-export type ValidationErrors = Record<string, string[]>
+import type { ValidationErrors, ValidationResult } from '@/types/validation'
 
-export type ValidationSuccess<T> = {
-  ok: true
-  data: T
-}
-
-export type ValidationFailure = {
-  ok: false
-  fieldErrors: ValidationErrors
-  formErrors: string[]
-}
-
-export type ValidationResult<T> = ValidationSuccess<T> | ValidationFailure
-
-function normalizeFieldErrors(
+function normalizeErrors(
   rawFieldErrors: Record<string, string[] | undefined>,
 ): ValidationErrors {
   return Object.entries(rawFieldErrors).reduce<ValidationErrors>((acc, [field, messages]) => {
@@ -27,7 +14,7 @@ function normalizeFieldErrors(
   }, {})
 }
 
-export function validateWithSchema<TSchema extends z.ZodTypeAny>(
+export function validate<TSchema extends z.ZodTypeAny>(
   schema: TSchema,
   input: unknown,
 ): ValidationResult<z.infer<TSchema>> {
@@ -44,7 +31,7 @@ export function validateWithSchema<TSchema extends z.ZodTypeAny>(
 
   return {
     ok: false,
-    fieldErrors: normalizeFieldErrors(fieldErrors),
+    fieldErrors: normalizeErrors(fieldErrors),
     formErrors,
   }
 }

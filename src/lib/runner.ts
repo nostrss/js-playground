@@ -1,21 +1,13 @@
-import { validateWithSchema } from '@/lib/validation'
+import { validate } from '@/utils/validate'
 import { runnerCommandSchema, runnerMessageSchema } from '@/schemas/console'
-import type { RunnerMessage } from '@/types/console'
-
-export type Runner = {
-  execute: (code: string, runId: number) => Promise<void>
-  dispose: () => void
-}
-
-type RunnerOptions = {
-  onMessage: (message: RunnerMessage) => void
-}
+import type { Runner, RunnerOptions } from '@/types/runner'
 
 const runnerSrcDoc = `<!doctype html>
 <html>
   <body>
     <script>
       (() => {
+        // SYNC: types/console.ts consoleLevels와 동기화 필요.
         const levels = ['log', 'info', 'warn', 'error', 'debug']
         let activeRunId = null
 
@@ -139,7 +131,7 @@ export function createRunner({ onMessage }: RunnerOptions): Runner {
       return
     }
 
-    const parsed = validateWithSchema(runnerMessageSchema, event.data)
+    const parsed = validate(runnerMessageSchema, event.data)
 
     if (!parsed.ok) {
       return
@@ -168,7 +160,7 @@ export function createRunner({ onMessage }: RunnerOptions): Runner {
       return
     }
 
-    const command = validateWithSchema(runnerCommandSchema, {
+    const command = validate(runnerCommandSchema, {
       type: 'execute',
       runId,
       code,

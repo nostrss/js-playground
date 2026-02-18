@@ -1,10 +1,4 @@
-type AnalyticsPrimitive = string | number | boolean
-type AnalyticsParams = Record<string, AnalyticsPrimitive | null | undefined>
-
-type GtagCommand = 'js' | 'config' | 'event'
-type Gtag = (command: GtagCommand, target: string | Date, params?: AnalyticsParams) => void
-
-const GA_SCRIPT_ID = 'ga4-gtag-script'
+import { GA_SCRIPT_ID } from '@/constants/analytics'
 
 let initialized = false
 let configured = false
@@ -93,7 +87,7 @@ export function trackPageView(path: string) {
   })
 }
 
-export function trackEvent(eventName: string, params?: AnalyticsParams) {
+export function trackEvent(eventName: string, params?: GtagParams) {
   if (!isAnalyticsEnabled()) {
     return
   }

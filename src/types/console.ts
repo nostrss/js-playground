@@ -1,3 +1,4 @@
+// SYNC: lib/runner.ts srcdoc에도 동일 배열 존재. 수정 시 함께 변경 필요.
 export const consoleLevels = ['log', 'info', 'warn', 'error', 'debug'] as const
 
 export type ConsoleLevel = (typeof consoleLevels)[number]
