@@ -22,10 +22,12 @@ pnpm install
 ```bash
 VITE_API_BASE_URL=http://127.0.0.1:4173
 VITE_APP_NAME=JS Playground
+# VITE_GA_MEASUREMENT_ID=G-XXXXXXXXXX  # 선택, GA4 측정 ID
 ```
 
 - `VITE_API_BASE_URL`: 필수, 유효한 URL이어야 함
 - `VITE_APP_NAME`: 선택, 미설정 시 기본값 `JS Playground`
+- `VITE_GA_MEASUREMENT_ID`: 선택, 미설정 또는 DEV 환경에서 자동 비활성화
 
 ### 4) 개발 서버 실행
 
@@ -44,6 +46,7 @@ pnpm dev
 - 런타임 에러 및 스택 출력
 - 콘솔 패널 너비 드래그 조절
 - 에디터 테마 선택 및 로컬 스토리지 저장
+- GA4 페이지 뷰 / 이벤트 추적 (운영 환경)
 
 ## SEO 기본 설정
 
@@ -107,37 +110,58 @@ pnpm lint && pnpm build
 
 ```text
 src/
-  components/
-    Editor.tsx         # Monaco 편집기 + 실행 트리거 + 레이아웃
-    ConsolePanel.tsx   # 콘솔 출력 렌더링 + 리사이즈 + 테마 셀렉트
+  main.tsx               # 엔트리 포인트: Monaco/Analytics 초기화 → React 렌더
+  App.tsx                # 루트 컴포넌트
+  types/                 # TypeScript 타입 정의 (theme, console, runner, validation, playground)
+  constants/             # 런타임 상수 (theme palette, editor 설정, analytics ID)
+  schemas/               # Zod 런타임 검증 스키마 (console, playground, env)
+  utils/                 # Pure 함수 (validate, theme, console 변환, clamp)
   lib/
-    runner.ts          # iframe 생성/실행/메시지 수집
-    monacoThemes.ts    # Monaco/Console 테마 정의
-    validation.ts      # Zod 검증 래퍼
-  schemas/             # 런타임 검증 스키마
-  types/               # 도메인 타입
+    runner.ts            # iframe 샌드박스 생성/실행/메시지 수집
+    monacoEnvironment.ts # Monaco Editor Web Worker 등록
+    analytics.ts         # GA4 gtag 스크립트 초기화 및 이벤트 추적
+  hooks/
+    useCodeRunner.ts     # Runner 생명주기 + 1초 디바운스 실행
+    useMonacoEditor.ts   # Monaco Editor 인스턴스 관리
+    useEditorTheme.ts    # 테마 선택 + localStorage 영속화
+    useConsoleResize.ts  # 콘솔 패널 드래그 리사이즈
+  components/
+    Editor.tsx           # 메인 레이아웃: hooks 조합 + Editor/ConsolePanel 배치
+    console/
+      ConsolePanel.tsx   # 콘솔 패널 컨테이너
+      ConsoleHeader.tsx  # 헤더 (타이틀 + 테마 드롭다운)
+      LogList.tsx        # 로그 목록 렌더링 (level별 색상)
+      ResizeHandle.tsx   # 드래그 핸들
 tests/
-  unit/                # unit 테스트
-  component/           # 컴포넌트 테스트
-  e2e/                 # Playwright 시나리오
+  unit/                  # unit 테스트 (analytics, runner, theme, validation 등)
+  component/             # 컴포넌트 테스트 (App, Editor)
+  e2e/                   # Playwright 시나리오
 ```
 
 ## 동작 원리
 
 ```text
-Editor 입력 -> 1초 디바운스 -> Runner(iframe) 실행 -> postMessage -> ConsolePanel 렌더링
+Monaco Editor 입력
+  → useMonacoEditor (코드 변경 감지)
+  → useCodeRunner (1초 디바운스)
+  → Runner: iframe.postMessage({ execute })
+  → iframe srcdoc: new Function('console', code)
+  → postMessage → RunnerMessage
+  → ConsolePanel 렌더링
 ```
 
-1. `Editor`가 코드 변경을 감지하고 1초 디바운스 후 실행 요청  
-2. `Runner`가 샌드박스 iframe을 만들고 코드를 실행  
-3. iframe 내부에서 `console.*`/runtime error를 `postMessage`로 전달  
-4. `ConsolePanel`이 메시지를 목록으로 렌더링
+1. `useMonacoEditor`가 Monaco 인스턴스를 관리하고 코드 변경을 감지
+2. `useCodeRunner`가 1초 디바운스 후 Runner에 실행을 위임
+3. `Runner`가 `sandbox="allow-scripts"` iframe을 생성하고 `srcdoc`에 콘솔 인터셉트 스크립트를 주입
+4. iframe 내에서 `console.*` 호출과 런타임 에러를 `postMessage`로 부모에게 전달
+5. `ConsolePanel`이 메시지를 `ConsoleEntry[]` 형태로 렌더링
 
 핵심 파일:
 
-- `src/components/Editor.tsx`
-- `src/lib/runner.ts`
-- `src/components/ConsolePanel.tsx`
+- `src/components/Editor.tsx` — 레이아웃 조합
+- `src/hooks/useCodeRunner.ts` — 실행 흐름 제어
+- `src/lib/runner.ts` — iframe 샌드박스
+- `src/components/console/ConsolePanel.tsx` — 출력 렌더링
 
 ## 테스트 가이드
 
@@ -146,10 +170,11 @@ Editor 입력 -> 1초 디바운스 -> Runner(iframe) 실행 -> postMessage -> Co
 - 환경: `jsdom`
 - 설정: `vite.config.ts` (`test` 섹션), `src/test/setup.ts`
 - 테스트 배치 규칙: `docs/rules/tests.md`
+- Vitest globals 활성화 (`describe`, `it`, `expect` import 불필요)
 
 ```bash
 pnpm test
-pnpm test src/lib/validation.test.ts
+pnpm test tests/unit/validation.test.ts
 ```
 
 ### E2E (Playwright)
@@ -170,16 +195,17 @@ pnpm e2e
 
 ## 디버깅 시작점
 
-- 실행/로그 흐름 문제: `src/lib/runner.ts`
-- 에디터 상태/디바운스 문제: `src/components/Editor.tsx`
-- 콘솔 렌더링/스타일 문제: `src/components/ConsolePanel.tsx`
-- 테마 문제: `src/lib/monacoThemes.ts`
+- 실행/로그 흐름 문제: `src/lib/runner.ts`, `src/hooks/useCodeRunner.ts`
+- 에디터 상태/디바운스 문제: `src/hooks/useMonacoEditor.ts`
+- 콘솔 렌더링/스타일 문제: `src/components/console/ConsolePanel.tsx`
+- 테마 문제: `src/utils/theme.ts`, `src/constants/theme.ts`
+- Analytics 문제: `src/lib/analytics.ts`
 
 ## 자주 발생하는 문제
 
-- `VITE_API_BASE_URL은 유효한 URL이어야 합니다.`  
+- `VITE_API_BASE_URL은 유효한 URL이어야 합니다.`
   `.env`의 `VITE_API_BASE_URL` 값을 URL 형태로 수정하세요.
-- E2E 포트 충돌  
+- E2E 포트 충돌
   `4173` 포트 사용 중인 프로세스를 종료하거나 Playwright 설정을 조정하세요.
-- Monaco 관련 타입/로더 문제  
+- Monaco 관련 타입/로더 문제
   `src/lib/monacoEnvironment.ts` 초기화가 `src/main.tsx`에서 호출되는지 확인하세요.
