@@ -22,7 +22,12 @@ export const LogList = ({ logs, themeStyle }: LogListProps) => {
       ) : (
         <ul className='space-y-2'>
           {logs.map((log) => (
-            <li key={log.id} style={levelStyle[log.level]}>
+            <li
+              key={log.id}
+              style={levelStyle[log.level]}
+              data-testid="console-log-entry"
+              data-level={log.level}
+            >
               <span className='mr-2 text-xs uppercase opacity-70'>{log.level}</span>
               <span>{log.text}</span>
             </li>
