@@ -16,6 +16,7 @@ type ConsolePanelProps = {
   themeOptions: Array<{ id: MonacoThemeId; label: string }>
   onThemeChange: (themeId: MonacoThemeId) => void
   onResizeStart: (event: ReactMouseEvent<HTMLDivElement>) => void
+  onShare: () => void
 }
 
 export const ConsolePanel = ({
@@ -26,6 +27,7 @@ export const ConsolePanel = ({
   themeOptions,
   onThemeChange,
   onResizeStart,
+  onShare,
 }: ConsolePanelProps) => {
   const themeStyle = getThemeStyle(selectedTheme)
 
@@ -46,6 +48,7 @@ export const ConsolePanel = ({
         themeOptions={themeOptions}
         themeStyle={themeStyle}
         onThemeChange={onThemeChange}
+        onShare={onShare}
       />
       <LogList logs={logs} themeStyle={themeStyle} />
     </section>

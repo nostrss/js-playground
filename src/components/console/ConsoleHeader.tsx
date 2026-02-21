@@ -9,6 +9,7 @@ type ConsoleHeaderProps = {
   themeOptions: Array<{ id: MonacoThemeId; label: string }>
   themeStyle: ConsolePanelThemeStyle
   onThemeChange: (themeId: MonacoThemeId) => void
+  onShare: () => void
 }
 
 export const ConsoleHeader = ({
@@ -17,6 +18,7 @@ export const ConsoleHeader = ({
   themeOptions,
   themeStyle,
   onThemeChange,
+  onShare,
 }: ConsoleHeaderProps) => {
   const handleThemeChange = (event: ChangeEvent<HTMLSelectElement>) => {
     onThemeChange(event.target.value as MonacoThemeId)
@@ -52,6 +54,17 @@ export const ConsoleHeader = ({
             </option>
           ))}
         </select>
+        <button
+          onClick={onShare}
+          className='rounded border px-2 py-1 text-xs'
+          style={{
+            backgroundColor: themeStyle.selectBg,
+            borderColor: themeStyle.selectBorder,
+            color: themeStyle.selectText,
+          }}
+        >
+          Share
+        </button>
         <span className='text-xs' data-testid='running-indicator' style={{ color: themeStyle.metaText }}>
           {isRunning ? 'Running...' : 'Idle'}
         </span>

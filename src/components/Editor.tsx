@@ -2,20 +2,25 @@ import { useCodeRunner } from '@/hooks/useCodeRunner'
 import { useMonacoEditor } from '@/hooks/useMonacoEditor'
 import { useEditorTheme } from '@/hooks/useEditorTheme'
 import { useConsoleResize } from '@/hooks/useConsoleResize'
+import { useShareCode } from '@/hooks/useShareCode'
 import { MONACO_THEME_OPTIONS } from '@/constants/theme'
 import { runtimeConfig } from '@/constants/editor'
+import { getSharedCode } from '@/utils/share'
 
 import { ConsolePanel } from './console'
 
 export const Editor = () => {
-  const { setCode, logs, isRunning } = useCodeRunner({
+  const initialCode = getSharedCode() ?? runtimeConfig.initialCode
+
+  const { code, setCode, logs, isRunning } = useCodeRunner({
     debounceMs: runtimeConfig.debounceMs,
     clearOnRun: runtimeConfig.clearOnRun,
-    initialCode: runtimeConfig.initialCode,
+    initialCode,
   })
-  const { containerRef } = useMonacoEditor({ initialCode: runtimeConfig.initialCode, onCodeChange: setCode })
+  const { containerRef } = useMonacoEditor({ initialCode, onCodeChange: setCode })
   const { selectedTheme, handleThemeChange } = useEditorTheme()
   const { consoleWidth, handleConsoleResizeStart } = useConsoleResize()
+  const { share } = useShareCode(code)
 
   return (
     <div className='h-full w-full overflow-auto'>
@@ -31,6 +36,7 @@ export const Editor = () => {
           themeOptions={MONACO_THEME_OPTIONS}
           onThemeChange={handleThemeChange}
           onResizeStart={handleConsoleResizeStart}
+          onShare={share}
         />
       </div>
     </div>
