@@ -1,8 +1,10 @@
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { CODE_STORAGE_KEY } from '@/constants/editor'
 import { THEME_STORAGE_KEY } from '@/constants/theme'
 import { getThemeStyle } from '@/utils/theme'
+import { encodeCode } from '@/utils/share'
 import type { RunnerMessage } from '@/types/console'
 
 const mockState = vi.hoisted(() => ({
@@ -210,6 +212,49 @@ describe('Editor', () => {
 
     expect(screen.queryByText('stale')).not.toBeInTheDocument()
     expect(screen.getByText('active')).toBeInTheDocument()
+  })
+
+  describe('코드 localStorage 영속성', () => {
+    it('localStorage에 저장된 코드가 있으면 Monaco.create의 초기 value로 사용한다', () => {
+      window.localStorage.setItem(CODE_STORAGE_KEY, 'console.log("restored")')
+
+      render(<Editor />)
+
+      expect(mockState.createMock).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({ value: 'console.log("restored")' }),
+      )
+    })
+
+    it('localStorage가 비어있으면 기본 코드로 Monaco를 초기화한다', () => {
+      render(<Editor />)
+
+      expect(mockState.createMock).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({ value: expect.stringContaining('Hello world!') }),
+      )
+    })
+
+    it('공유 URL 코드가 있으면 localStorage 코드보다 우선하여 Monaco를 초기화한다', () => {
+      const sharedCode = 'console.log("from share")'
+      window.localStorage.setItem(CODE_STORAGE_KEY, 'console.log("from local")')
+      window.location.hash = `code=${encodeCode(sharedCode)}`
+
+      render(<Editor />)
+
+      expect(mockState.createMock).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({ value: sharedCode }),
+      )
+
+      window.location.hash = ''
+    })
+
+    it('렌더링 후 초기 코드가 localStorage에 저장된다', () => {
+      render(<Editor />)
+
+      expect(window.localStorage.getItem(CODE_STORAGE_KEY)).toContain('Hello world!')
+    })
   })
 
   it('runtime error 로그를 콘솔에 표시한다', async () => {

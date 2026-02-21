@@ -3,6 +3,8 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { createRunner } from '@/lib/runner'
 import { trackEvent } from '@/lib/analytics'
 import { toEntry } from '@/utils/console'
+import { CODE_STORAGE_KEY } from '@/constants/editor'
+import { saveCode } from '@/utils/storage'
 import type { ConsoleEntry, RunnerMessage } from '@/types/console'
 
 type UseCodeRunnerOptions = {
@@ -77,6 +79,10 @@ export function useCodeRunner({ debounceMs, clearOnRun, initialCode }: UseCodeRu
       window.clearTimeout(timeoutId)
     }
   }, [code, debounceMs, clearOnRun])
+
+  useEffect(() => {
+    saveCode(CODE_STORAGE_KEY, code)
+  }, [code])
 
   return { code, setCode, logs, isRunning }
 }

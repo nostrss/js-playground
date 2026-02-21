@@ -4,13 +4,14 @@ import { useEditorTheme } from '@/hooks/useEditorTheme'
 import { useConsoleResize } from '@/hooks/useConsoleResize'
 import { useShareCode } from '@/hooks/useShareCode'
 import { MONACO_THEME_OPTIONS } from '@/constants/theme'
-import { runtimeConfig } from '@/constants/editor'
+import { CODE_STORAGE_KEY, runtimeConfig } from '@/constants/editor'
 import { getSharedCode } from '@/utils/share'
+import { loadCode } from '@/utils/storage'
 
 import { ConsolePanel } from './console'
 
 export const Editor = () => {
-  const initialCode = getSharedCode() ?? runtimeConfig.initialCode
+  const initialCode = getSharedCode() ?? loadCode(CODE_STORAGE_KEY) ?? runtimeConfig.initialCode
 
   const { code, setCode, logs, isRunning } = useCodeRunner({
     debounceMs: runtimeConfig.debounceMs,
